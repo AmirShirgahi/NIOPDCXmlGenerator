@@ -59,7 +59,7 @@ namespace NIOPDCXmlGenerator.Services
         /// درج یا به‌روزرسانی سرفصل و جزئیات ویزیت در یک تراکنش
         /// اگر visitIdToUpdate مشخص باشد، روش فعلی این پیاده‌سازی، حذف جزئیات فعلی و درج مجدد جزئیات جدید است.
         /// </summary>
-        public int InsertVisitWithDetails(int patientId, DateTime visitDate, DateTime? bookletExpiry, string prescriptionPageNo,
+        public int InsertVisitWithDetails(int visitNO, int patientId, DateTime visitDate, DateTime? bookletExpiry, string prescriptionPageNo,
                                           IEnumerable<AddDetailRequest> details, bool isRetired, int? visitIdToUpdate = null)
         {
             using var cn = DbHelper.GetConnection();
@@ -123,6 +123,7 @@ namespace NIOPDCXmlGenerator.Services
             WHERE VisitId=@VisitId";
                     cn.Execute(updateSql, new
                     {
+                        VisitNO = visitNO,
                         PatientId = patientId,
                         VisitDate = visitDate.Date,
                         BookletExpiryDate = bookletExpiry?.Date,
@@ -139,11 +140,12 @@ namespace NIOPDCXmlGenerator.Services
                 else
                 {
                     var insertVisitSql = @"
-            INSERT INTO Visits (PatientId, VisitDate, BookletExpiryDate, PrescriptionPageNo, TotalQuantity, TotalPatientShare, TotalCompanyShare, TotalAmount)
-            VALUES (@PatientId, @VisitDate, @BookletExpiryDate, @PrescriptionPageNo, @TotalQuantity, @TotalPatientShare, @TotalCompanyShare, @TotalAmount);
+            INSERT INTO Visits (VisitNO,PatientId, VisitDate, BookletExpiryDate, PrescriptionPageNo, TotalQuantity, TotalPatientShare, TotalCompanyShare, TotalAmount)
+            VALUES (@VisitNO,@PatientId, @VisitDate, @BookletExpiryDate, @PrescriptionPageNo, @TotalQuantity, @TotalPatientShare, @TotalCompanyShare, @TotalAmount);
             SELECT CAST(SCOPE_IDENTITY() as int);";
                     visitId = cn.QuerySingle<int>(insertVisitSql, new
                     {
+                        VisitNO = visitNO,
                         PatientId = patientId,
                         VisitDate = visitDate.Date,
                         BookletExpiryDate = bookletExpiry?.Date,
