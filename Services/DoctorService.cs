@@ -16,10 +16,10 @@ namespace NIOPDCXmlGenerator.Services
             _connectionString = DbHelper.GetConnection().ConnectionString;
         }
 
-        public List<Doctor> GetAll()
+        public List<Doctor> GetAll(bool ShowDisabledDoctors=true)
         {
             using var connection = new SqlConnection(_connectionString);
-            return connection.Query<Doctor>("SELECT * FROM Doctors").ToList();
+            return connection.Query<Doctor>($"SELECT * FROM Doctors {(!ShowDisabledDoctors ? string.Format("WHERE IsActive=1"):string.Empty)}").ToList();
         }
 
         public Doctor GetByNPCode(string npCode)

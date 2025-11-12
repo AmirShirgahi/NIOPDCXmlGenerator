@@ -56,6 +56,11 @@ namespace NIOPDCXmlGenerator.Forms
             // txtAmount
             // 
             this.txtAmount.Location = new System.Drawing.Point(160, 72);
+            this.txtAmount.Maximum = new decimal(new int[] {
+            1410065407,
+            2,
+            0,
+            0});
             this.txtAmount.Minimum = new decimal(new int[] {
             1,
             0,

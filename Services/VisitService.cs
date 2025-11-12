@@ -31,6 +31,12 @@ namespace NIOPDCXmlGenerator.Services
         /// <summary>
         /// باز می‌گرداند همه ویزیت‌ها به همراه کد پرسنلی و نام بیمار (برای نمایش در لیست)
         /// </summary>
+        public int GetNextVisitNo()
+        {
+            using var cn = DbHelper.GetConnection();
+            var sql = @"SELECT ISNULL(MAX(VisitNo), 0) FROM Visits";
+            return cn.QueryFirst<int>(sql) + 1;
+        }
         public IEnumerable<VisitListItem> GetAllVisits()
         {
             using var cn = DbHelper.GetConnection();

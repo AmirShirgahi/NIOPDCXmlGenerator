@@ -427,7 +427,6 @@
         private Telerik.WinControls.UI.RadRibbonBarGroup radRibbonBarGroup2;
         private Telerik.WinControls.UI.RadButtonElement radButtonElement2;
         private Telerik.WinControls.UI.RadButtonElement radButtonElement3;
-        private System.Windows.Forms.ImageList imageList1;
         private Telerik.WinControls.UI.RibbonTab ribbonTab2;
         private Telerik.WinControls.UI.RadRibbonBarGroup radRibbonBarGroup3;
         private Telerik.WinControls.UI.RadButtonElement radButtonElement4;
@@ -451,5 +450,6 @@
         private Telerik.WinControls.UI.RadButtonElement btnServiceTariffList;
         private Telerik.WinControls.UI.RadRibbonBarGroup radRibbonBarGroup8;
         private Telerik.WinControls.UI.RadButtonElement radButtonElement8;
+        public System.Windows.Forms.ImageList imageList1;
     }
 }

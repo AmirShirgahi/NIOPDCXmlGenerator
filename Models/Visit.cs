@@ -5,6 +5,7 @@ namespace NIOPDCXmlGenerator.Models
     public class Visit
     {
         public int VisitId { get; set; }
+        public int VisitNO { get; set; }
         public int PatientId { get; set; }
         public DateTime VisitDate { get; set; }
         public DateTime? BookletExpiryDate { get; set; }

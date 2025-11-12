@@ -16,6 +16,7 @@ namespace NIOPDCXmlGenerator.Models
         public DateTime? UpdatedAt { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
+        public string FullNameWithSpecialty => $"{FirstName} {LastName} - {NPCode}";
         public string GenderText => Gender == 1 ? "مرد" : "زن";
     }
 }

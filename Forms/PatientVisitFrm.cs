@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
-using Dapper;
+﻿using Dapper;
 using NIOPDCXmlGenerator.Data;
 using NIOPDCXmlGenerator.Models;
 using NIOPDCXmlGenerator.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 using Telerik.WinControls;
 using Telerik.WinControls.Enumerations;
 using Telerik.WinControls.UI;
+using YourNamespace.Forms;
 
 namespace NIOPDCXmlGenerator.Forms
 {
     public partial class PatientVisitFrm : RadForm
     {
+        private readonly DoctorService _doctorService = new DoctorService();
         private readonly ServiceService _serviceService = new ServiceService();
         private readonly FranchiseService _franchiseService = new FranchiseService();
         private readonly VisitService _visitService = new VisitService();
@@ -36,10 +38,18 @@ namespace NIOPDCXmlGenerator.Forms
         private void PatientVisitFrm_Load(object sender, EventArgs e)
         {
             txtVisitDate.Text = PersianDateHelper.ToShamsi(DateTime.Now);
+            ddDoctor.DataSource = _doctorService.GetAll(false);
+            ddDoctor.DisplayMember = "FullNameWithSpecialty";
+            ddDoctor.ValueMember = "NPCode";
+            ddDoctor.Enabled = true;
 
             if (_editingVisitId.HasValue)
             {
                 LoadVisitForEdit(_editingVisitId.Value);
+            }
+            else
+            {
+                txtVisitNo.Value = _visitService.GetNextVisitNo();
             }
         }
 
@@ -235,8 +245,8 @@ namespace NIOPDCXmlGenerator.Forms
                 d.CompanyShare
             }).ToList();
 
-            radGridViewServices.DataSource = rows;
-            if (radGridViewServices.Columns["ServiceId"] != null) radGridViewServices.Columns["ServiceId"].IsVisible = false;
+            gridVisitDetails.DataSource = rows;
+            if (gridVisitDetails.Columns["ServiceId"] != null) gridVisitDetails.Columns["ServiceId"].IsVisible = false;
 
             UpdateTotalsOnForm();
         }
@@ -252,6 +262,7 @@ namespace NIOPDCXmlGenerator.Forms
         // handler برای ویرایش تعداد در grid: در این نمونه چون از AutoGenerateColumns استفاده شده،
         // ما کنترل ویرایشی سطرها را با باز کردن یک فرم کوچک یا با راهکار inline مدیریت می‌کنیم.
         // راه ساده: انتخاب سطر و استفاده از یک Inputbox برای تغییر تعداد.
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void btnEditQuantity_Click(object sender, EventArgs e)
         {
             //if (radGridViewServices.CurrentRow == null) return;
@@ -289,14 +300,16 @@ namespace NIOPDCXmlGenerator.Forms
             //}
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void btnRemoveService_Click(object sender, EventArgs e)
         {
-            if (radGridViewServices.CurrentRow == null) return;
-            int serviceId = (int)radGridViewServices.CurrentRow.Cells["ServiceId"].Value;
+            if (gridVisitDetails.CurrentRow == null) return;
+            int serviceId = (int)gridVisitDetails.CurrentRow.Cells["ServiceId"].Value;
             var idx = _pendingDisplay.FindIndex(d => d.ServiceId == serviceId);
             if (idx >= 0) { _pendingDisplay.RemoveAt(idx); _pendingDetails.RemoveAt(idx); RefreshServiceGrid(); }
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void btnSaveAll_Click(object sender, EventArgs e)
         {
             if (_pendingDetails.Count == 0) { ShowError("هیچ خدمتی اضافه نشده."); return; }
@@ -336,6 +349,7 @@ namespace NIOPDCXmlGenerator.Forms
             try
             {
                 var visitId = _visitService.InsertVisitWithDetails(
+                    Convert.ToInt32(txtVisitNo.Value),
                   _currentPatient.PatientId,
                   visitDate,
                   bookletExpiry,
@@ -354,6 +368,7 @@ namespace NIOPDCXmlGenerator.Forms
             }
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void FillVisitForEdit(int visitId)
         {
             var (visit, details) = _visitService.GetVisitWithDetails(visitId);
@@ -377,8 +392,10 @@ namespace NIOPDCXmlGenerator.Forms
             RefreshServiceGrid();
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void ShowError(string msg) => RadMessageBox.Show(this, msg, "خطا", MessageBoxButtons.OK, RadMessageIcon.Error);
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void txtPersonnelCode_TextChanged(object sender, EventArgs e)
         {
             var input = txtPersonnelCode.Value?.ToString()?.Replace("_", "").Trim();
@@ -399,8 +416,8 @@ namespace NIOPDCXmlGenerator.Forms
                     if (_insertPatientFrm.ShowDialog() == DialogResult.OK)
                     {
                         //txtPersonnelCode.Value = _insertPatientFrm._returnPersonnelCode;
-                         existing = cn.QueryFirstOrDefault<Patient>(
-                            "SELECT * FROM Patients WHERE PersonnelCode = @code", new { code = input });
+                        existing = cn.QueryFirstOrDefault<Patient>(
+                           "SELECT * FROM Patients WHERE PersonnelCode = @code", new { code = input });
                         LoadPatientToForm(existing);
                     }
                 }
@@ -408,6 +425,7 @@ namespace NIOPDCXmlGenerator.Forms
             }
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
         private void LoadPatientToForm(Patient p)
         {
             //txtPersonnelCode.Text = p.PersonnelCode;
@@ -416,6 +434,63 @@ namespace NIOPDCXmlGenerator.Forms
             txtNationalCode.Text = p.NationalCode;
             txtMobile.Text = p.Mobile;
             ddlStatus.SelectedIndex = p.IsRetired ? 1 : 0;
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+        private void panelTop_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+        private void btnEdit_Click(object sender, EventArgs e)
+        {
+            if (gridVisitDetails.CurrentRow == null || gridVisitDetails.CurrentRow.DataBoundItem == null)
+            {
+                RadMessageBox.Show("لطفاً یک خدمت را انتخاب کنید.", "هشدار", MessageBoxButtons.OK, RadMessageIcon.Exclamation);
+                return;
+            }
+
+            var detail = (VisitDetail)gridVisitDetails.CurrentRow.DataBoundItem;
+
+            var frm = new PatientVisitDetailsFrm(currentVisitId, currentPatient, currentVisitDate, detail.VisitDetailId);
+            if (frm.ShowDialog() == DialogResult.OK)
+            {
+                LoadVisitDetails(); // بارگذاری مجدد پس از ویرایش
+            }
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (gridVisitDetails.CurrentRow == null || gridVisitDetails.CurrentRow.DataBoundItem == null)
+            {
+                RadMessageBox.Show("لطفاً یک خدمت را انتخاب کنید.", "هشدار", MessageBoxButtons.OK, RadMessageIcon.Exclamation);
+                return;
+            }
+
+            var detail = (VisitDetail)gridVisitDetails.CurrentRow.DataBoundItem;
+
+            var confirm = RadMessageBox.Show("آیا از حذف این خدمت مطمئن هستید؟", "تأیید حذف", MessageBoxButtons.YesNo, RadMessageIcon.Question);
+            if (confirm == DialogResult.Yes)
+            {
+                var service = new VisitDetailService();
+                service.Delete(detail.VisitDetailId);
+                LoadVisitDetails(); // بارگذاری مجدد پس از حذف
+            }
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+        private void btnInsert_Click(object sender, EventArgs e)
+        {
+            var frm = new PatientVisitDetailsFrm(currentVisitId, currentPatient, currentVisitDate);
+            if (frm.ShowDialog() == DialogResult.OK)
+            {
+                LoadVisitDetails(); // بارگذاری مجدد خدمات پس از درج
+            }
+
         }
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
